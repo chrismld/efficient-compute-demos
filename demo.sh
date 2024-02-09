@@ -11,7 +11,6 @@ CLUSTER_NAME="karpenter-blueprints"
 ## - Move to Graviton instances
 ## - Move to Spot instances
 ## - Split OD & Spot
-## - Spread within AZs
 
 echo "## - Deploy a default nodepool and ec2nodeclass"
 
@@ -101,13 +100,6 @@ spec:
           requests:
             cpu: "1"
             memory: 512M
-      topologySpreadConstraints:
-      - labelSelector:
-          matchLabels:
-            app: inflate-workload
-        maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule
 EOF
 
 # cmd "cat deployment-default.yaml"
