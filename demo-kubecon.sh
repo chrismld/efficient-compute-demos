@@ -4,6 +4,8 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source "${SCRIPTPATH}/lib/utils.sh"
 CLUSTER_NAME=$EKS_CLUSTER_NAME
 FILEPATH=/tmp/demo-kubecon
+
+
 #FEATURE_GATES
 #value: Drift=true,SpotToSpotConsolidation=true 
 
@@ -19,7 +21,7 @@ FILEPATH=/tmp/demo-kubecon
 ######
 
 ###### TERMINAL 2
-# figlet "Viewing EKS Nodes" | lolcat ; read -n 1;  eks-node-viewer
+# figlet "Viewing EKS Nodes" | lolcat ; read -n 1;  eks-node-viewer -extra-labels=karpenter.sh/nodepool,beta.kubernetes.io/arch,topology.kubernetes.io/zone
 ######
  
 ###### TERMINAL 3
@@ -41,7 +43,7 @@ FILEPATH=/tmp/demo-kubecon
 # k9s -c nodeclaim
 ###### https://k9scli.io/topics/commands/
 
-mkdir $FILEPATH
+mkdir -p $FILEPATH
 echo "Welcome to KubeCon Paris 2024: Karpenter Démo" | lolcat
 
 echo "## 1.) Deploy a default ec2nodeclass and nodepool" | lolcat
