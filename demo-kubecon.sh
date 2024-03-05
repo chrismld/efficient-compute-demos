@@ -10,26 +10,35 @@ FILEPATH=/tmp/demo-kubecon
 #value: Drift=true,SpotToSpotConsolidation=true 
 
 ## Demo Workflow
-## - Deploy a default nodepool and ec2nodeclass
-## - Deploy a sample application to see Karpenter in action
-## - Consolidation
-## - Split OD & Spot with a spread within AZs
-## - Spot Interruption
+## 1.) Deploy a default ec2nodeclass and nodepool
+## 2.) Deploy 3 replicas of a sample application to see Karpenter in action
+## 3.) Scale to 12
+## 4.) Deploy a big Workload
+## 5.) Allow consolidation on Graviton instances
+## 6.) Allow consolidation on Spot instances
+## 7.) Delete Big Pod and observe Spot-to-Spot consolidation
+## 8.) Split OD & Spot with a spread within AZs
+## 9.) Spot Interruption
+## 10.) THAT'S IT!
 
 ###### TERMINAL 1
-# figlet "Kubernetes CLI : K9S" | lolcat; read -n 1; k9s
+# alias t1='clear; figlet "Kubernetes CLI : K9S" | lolcat; read -n 1; k9s -n default -c deployment'
+# t1
 ######
 
 ###### TERMINAL 2
-# figlet "Viewing EKS Nodes" | lolcat ; read -n 1;  eks-node-viewer -extra-labels=karpenter.sh/nodepool,beta.kubernetes.io/arch,topology.kubernetes.io/zone
+# alias t2='clear; figlet "Viewing EKS Nodes" | lolcat ; read -n 1;  eks-node-viewer -extra-labels=karpenter.sh/nodepool,beta.kubernetes.io/arch,topology.kubernetes.io/zone'
+# t2
 ######
  
 ###### TERMINAL 3
-# figlet "Demo Script" | lolcat ; read -n 1;  sh ./demo-kubecon.sh  
+# alias t3='clear; figlet "Demo Script" | lolcat ; read -n 1;  sh ./demo-kubecon.sh'
+# t3
 ######
 
 ###### TERMINAL 4
-# figlet "Karpenter Logs" | lolcat ; read -n 1; kubectl stern -n karpenter karpenter --tail=1 --highlight message -o json | jq -r '.message | fromjson | "\(.time) \(.level) \(.message)"' | grep -v DEBUG
+# alias t4='clear; figlet "Karpenter Logs" | lolcat ; read -n 1; kubectl stern -n karpenter karpenter --tail=1 --highlight message -o json | jq -r '.message | fromjson | "\(.time) \(.level) \(.message)"' | grep -v DEBUG'
+# t4
 #
 # kubectl stern -n karpenter karpenter --tail=1
 # kubectl stern -n karpenter karpenter --tail=100 | grep -v DEBUG | egrep  "found provisionable pod(s)|computed new nodeclaim(s) to fit pod(s)|created nodeclaim|registered nodeclaim|launched nodeclaim|initialized nodeclaim|disrupting via consolidation delete|launched nodeclaim|tainted node|deleted node|computed|"
@@ -44,6 +53,13 @@ FILEPATH=/tmp/demo-kubecon
 ###### https://k9scli.io/topics/commands/
 
 mkdir -p $FILEPATH
+
+kubectl delete deployment tiny-workload &> /dev/null || true
+kubectl delete deployment big-workload &> /dev/null || true
+kubectl delete nodepool default &> /dev/null|| true
+kubectl delete nodepool spot &> dev/null || true
+
+clear
 echo "Welcome to KubeCon Paris 2024: Karpenter Démo" | lolcat
 
 echo "## 1.) Deploy a default ec2nodeclass and nodepool" | lolcat
@@ -54,7 +70,7 @@ kind: EC2NodeClass
 metadata:
   name: default
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   role: karpenter-${CLUSTER_NAME}
   amiFamily: AL2
@@ -72,19 +88,18 @@ kind: NodePool
 metadata:
   name: default
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
   annotations:
     karpenter.sh/do-not-disrupt: "true"
 spec:
   disruption:
-    #consolidationPolicy: WhenUnderutilized
     consolidationPolicy: WhenEmpty
     consolidateAfter: 60s
     expireAfter: 720h
   template:
     metadata:
       labels:
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       requirements:
         - key: karpenter.sh/capacity-type
@@ -95,25 +110,20 @@ spec:
           values: ["amd64"]
         - key: karpenter.k8s.aws/instance-size
           operator: NotIn
-          values: ["nano"]          
-        #- key: karpenter.k8s.aws/instance-category
-        #  operator: In
-        #  values: ["c", "m", "r", "i", "d"]
-        #- key: karpenter.k8s.aws/instance-generation
-        #  operator: Gt
-        #  values: ["2"]
+          values: ["nano", "micro"]          
       nodeClassRef:
         name: default
 EOF
 
 #cmd "kubectl apply -f ec2nodeclass-default.yaml"
-kubectl get ec2nodeclass default -o yaml | yq '.spec'
+cmd "kubectl get ec2nodeclass default -o yaml | yq '.spec'"
 
 cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
 kubectl get nodepool default -o yaml | yq '.spec'
 
-cmd "#-> look at the constraints"
+cmd "#-> look at the spec requirements"
 
+clear
 echo "## 2.) Deploy 3 replicas of a sample application to see Karpenter in action" | lolcat
 
 cat << EOF > $FILEPATH/deployment-tiny.yaml
@@ -122,7 +132,7 @@ kind: Deployment
 metadata:
   name: tiny-workload
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   selector:
     matchLabels:
@@ -132,10 +142,10 @@ spec:
     metadata:
       labels:
         app: tiny-workload
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       nodeSelector:
-        demo: compute-optimization
+        demo: kubecon2024
       containers:
       - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
         name: tiny-workload
@@ -159,7 +169,7 @@ kind: Deployment
 metadata:
   name: big-workload
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   selector:
     matchLabels:
@@ -169,10 +179,10 @@ spec:
     metadata:
       labels:
         app: big-workload
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       nodeSelector:
-        demo: compute-optimization
+        demo: kubecon2024
       containers:
       - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
         name: big-workload
@@ -194,12 +204,13 @@ kubectl get deployment tiny-workload -o yaml | yq -r '.spec.template.spec'
 
 cmd "#-> Note: the TopologySpread meaning we want spread pods onto the 3 AZs!!"
 
-
+clear
 echo "## 3.) Scale to 12" | lolcat
 cmd "kubectl scale deployment tiny-workload --replicas=12"
 
 cmd "#-> This can takes a minute"
 
+clear
 echo "## 4.) Deploy a big Workload" | lolcat
 
 cmd "kubectl apply -f $FILEPATH/deployment-big.yaml"
@@ -207,96 +218,56 @@ kubectl get deployment big-workload -o yaml | yq -r '.spec.template.spec'
 
 cmd "#-> The requests are bigger so it will need a bigger instance"
 
-echo "## 5.) Allow to deploy also on Graviton instances" | lolcat
+clear
+echo "## 5.) Activate Karpenter consolidation" | lolcat
+cmd "sed -i -e 's/WhenEmpty/WhenUnderutilized/' -e 's/consolidateAfter/#consolidateAfter/' $FILEPATH/node-pool-default.yaml  && kubectl apply -f $FILEPATH/node-pool-default.yaml"
 
-cat << EOF > $FILEPATH/node-pool-default.yaml
-apiVersion: karpenter.sh/v1beta1
-kind: NodePool
-metadata:
-  name: default
-  labels:
-    demo: compute-optimization
-spec:
-  disruption:
-    consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h
-  template:
-    metadata:
-      labels:
-        demo: compute-optimization
-    spec:
-      requirements:
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["on-demand"]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64", arm64]
-        - key: karpenter.k8s.aws/instance-size
-          operator: NotIn
-          values: ["nano"]            
-        #- key: karpenter.k8s.aws/instance-category
-        #  operator: In
-        #  values: ["c", "m", "r", "i", "d"]
-        #- key: karpenter.k8s.aws/instance-generation
-        #  operator: Gt
-        #  values: ["2"]
-      nodeClassRef:
-        name: default
-EOF
 
-cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
-kubectl get nodepool default -o yaml | yq '.spec'
+cmd "#-> Watch Karpenter remove unnecessary nodes"
 
-cmd "#-> we allow Karpenter disruption, and we add architecture Graviton (arm64)"
+clear
+echo "## 6.) Allow consolidation on Graviton instances" | lolcat
 
-echo "## 6.) Allow to deploy also on Spot instances" | lolcat
 
-cat << EOF > $FILEPATH/node-pool-default.yaml
-apiVersion: karpenter.sh/v1beta1
-kind: NodePool
-metadata:
-  name: default
-  labels:
-    demo: compute-optimization
-spec:
-  disruption:
-    consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h
-  template:
-    metadata:
-      labels:
-        demo: compute-optimization
-    spec:
-      requirements:
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["on-demand", "spot"]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64", arm64]
-        #- key: karpenter.k8s.aws/instance-category
-        #  operator: In
-        #  values: ["c", "m", "r", "i", "d"]
-        #- key: karpenter.k8s.aws/instance-generation
-        #  operator: Gt
-        #  values: ["2"]
-      nodeClassRef:
-        name: default
-EOF
+yq eval '.spec.template.spec.requirements[] |= select(.key == "kubernetes.io/arch").values += ["arm64" | . style="double"]' $FILEPATH/node-pool-default.yaml -i
+kubectl apply -f $FILEPATH/node-pool-default.yaml
+cmd "kubectl get nodepool default -o yaml | yq '.spec'"
 
-cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
-kubectl get nodepool default -o yaml | yq '.spec'
 
-cmd "#-> we allow Karpenter disruption, and the usage of Spot instances"
+cmd "#-> Watch the new arm64 (Graviton) in the kubernetes.io/arch requirement"
 
-echo "## 7.) Delete Big Pod and observe Spot2Spot consolidation" | lolcat
+
+clear
+echo "## 7.) Allow consolidation on Spot instances" | lolcat
+
+
+yq eval '.spec.template.spec.requirements[] |= select(.key == "karpenter.sh/capacity-type").values += ["spot" | . style="double"]' $FILEPATH/node-pool-default.yaml -i
+kubectl apply -f $FILEPATH/node-pool-default.yaml
+cmd "kubectl get nodepool default -o yaml | yq '.spec'"
+
+
+cmd "#-> Watch On-demand to Spot consolidation" 
+
+clear
+echo "## 8.) Delete Big Pod and observe Spot-to-Spot consolidation" | lolcat
 
 cmd "kubectl delete -f $FILEPATH/deployment-big.yaml"
 
 cmd "#-> Watch Spot to spot consolidation in action"
 
-echo "## 8.) Split OD & Spot with a spread within AZs" | lolcat
+
+clear
+echo "## 9.) Spot Interruption" | lolcat
+cmd "ec2-spot-interrupter --interactive"
+
+## GO TO ANOTHER TERMINAL AND RUN THAT COMMAND, CHOOSE ONE INSTANCE
+## MONITOR IN ANOTHER TAB THE KUBERNETES NODES TO SEE THAT THE INTERRUPTION IS BEING HANDLED
+## $>watch kubectl get nodes
+
+cmd "#-> Watch how the spot termination signal is automatically handle, and replace with new spot node"
+
+clear
+echo "## 10.) Split OD & Spot with a spread within AZs" | lolcat
 
 cat << EOF > $FILEPATH/node-pool-default.yaml
 apiVersion: karpenter.sh/v1beta1
@@ -304,7 +275,7 @@ kind: NodePool
 metadata:
   name: default
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   disruption:
     consolidationPolicy: WhenUnderutilized
@@ -312,7 +283,7 @@ spec:
   template:
     metadata:
       labels:
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       requirements:
         - key: capacity-spread
@@ -324,12 +295,9 @@ spec:
         - key: kubernetes.io/arch
           operator: In
           values: ["amd64", "arm64"]
-        #- key: karpenter.k8s.aws/instance-category
-        #  operator: In
-        #  values: ["c", "m", "r", "i", "d"]
-        #- key: karpenter.k8s.aws/instance-generation
-        #  operator: Gt
-        #  values: ["2"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: NotIn
+          values: ["nano", "micro"]
       nodeClassRef:
         name: default
 EOF
@@ -340,7 +308,7 @@ kind: NodePool
 metadata:
   name: spot
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   disruption:
     consolidationPolicy: WhenUnderutilized
@@ -348,12 +316,12 @@ spec:
   template:
     metadata:
       labels:
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       requirements:
         - key: capacity-spread
           operator: In
-          values: ["2", "3", "4", "5"]
+          values: ["2", "3"]
         - key: karpenter.sh/capacity-type
           operator: In
           values: ["spot"]
@@ -362,13 +330,7 @@ spec:
           values: ["amd64", "arm64"]
         - key: karpenter.k8s.aws/instance-size
           operator: NotIn
-          values: ["nano"]            
-        # - key: karpenter.k8s.aws/instance-category
-        #   operator: In
-        #   values: ["c", "m", "r", "i", "d"]
-        # - key: karpenter.k8s.aws/instance-generation
-        #   operator: Gt
-        #   values: ["2"]
+          values: ["nano", "micro"]
       nodeClassRef:
         name: default
 EOF
@@ -377,12 +339,15 @@ EOF
 # cmd "cat node-pool-default.yaml"
 # cmd "cat node-pool-spot.yaml"
 cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
-cmd "kubectl get nodepool default -o yaml | yq '.spec'"
+kubectl get nodepool default -o yaml | yq '.spec'
+
+cmd "# -> look at the capacity-spread requirement on on-demand capacity"
 
 cmd "kubectl apply -f $FILEPATH/node-pool-spot.yaml"
 kubectl get nodepool spot -o yaml | yq '.spec'
 
-cmd "#-> We uses a Key labels on the node that will be used by our topologySpread repartition"
+cmd "# -> look at the capacity-spread requirement on on-demand capacity"
+
 
 cat << EOF > $FILEPATH/deployment-default.yaml
 apiVersion: apps/v1
@@ -390,27 +355,27 @@ kind: Deployment
 metadata:
   name: tiny-workload
   labels:
-    demo: compute-optimization
+    demo: kubecon2024
 spec:
   selector:
     matchLabels:
       app: tiny-workload
-  replicas: 30
+  replicas: 60
   template:
     metadata:
       labels:
         app: tiny-workload
-        demo: compute-optimization
+        demo: kubecon2024
     spec:
       nodeSelector:
-        demo: compute-optimization
+        demo: kubecon2024
       containers:
       - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
         name: tiny-workload
         resources:
           requests:
-            cpu: "256m"
-            memory: 512Mi
+            cpu: "1512m"
+            memory: 50Mi
       topologySpreadConstraints:
       - labelSelector:
           matchLabels:
@@ -432,15 +397,10 @@ kubectl get deployment tiny-workload -o yaml | yq -r '.spec.template.spec'
 
 cmd "#-> Look at the topologySpreadConstraints repartition"
 
-echo "## - Spot Interruption" | lolcat
-cmd "ec2-spot-interrupter --interactive"
-
-## GO TO ANOTHER TERMINAL AND RUN THAT COMMAND, CHOOSE ONE INSTANCE
-## MONITOR IN ANOTHER TAB THE KUBERNETES NODES TO SEE THAT THE INTERRUPTION IS BEING HANDLED
-## $>watch kubectl get nodes
-
-cmd "echo ..."
-cmd "## - THAT'S IT!" | lolcat
+clear
+cmd "## 11.) THAT'S IT!" | lolcat
 
 kubectl delete deployment tiny-workload
+kubectl delete nodepool default
+kubectl delete nodepool spot
 

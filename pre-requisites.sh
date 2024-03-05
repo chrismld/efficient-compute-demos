@@ -13,6 +13,6 @@ echo "alias eks-node-viewer='eks-node-viewer -extra-labels=karpenter.sh/nodepool
 sudo yum install figlet pv -y
 gem install lolcat
 
-export EKS_CLUSTER_NAME="kubecon"
+
 eksdemo create cluster $EKS_CLUSTER_NAME --vpc-cidr 10.254.0.0/16 -N 3 --version 1.29
 eksdemo install autoscaling-karpenter -c $EKS_CLUSTER_NAME --chart-version v0.34.1 --version v0.34.1
