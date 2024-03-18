@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 set -euo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source "${SCRIPTPATH}/lib/utils.sh"
@@ -189,14 +189,7 @@ spec:
         resources:
           requests:
             cpu: "16"
-            memory: 128Gi
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: big-workload          
+            memory: 128Gi         
 EOF
 
 cmd "kubectl apply -f $FILEPATH/deployment-tiny.yaml"
@@ -266,139 +259,139 @@ cmd "ec2-spot-interrupter --interactive"
 
 cmd "#-> Watch how the spot termination signal is automatically handle, and replace with new spot node"
 
+# clear
+# echo "## 10.) Split OD & Spot with a spread within AZs" | lolcat
+
+# cat << EOF > $FILEPATH/node-pool-default.yaml
+# apiVersion: karpenter.sh/v1beta1
+# kind: NodePool
+# metadata:
+#   name: default
+#   labels:
+#     demo: kubecon2024
+# spec:
+#   disruption:
+#     consolidationPolicy: WhenUnderutilized
+#     expireAfter: 720h
+#   template:
+#     metadata:
+#       labels:
+#         demo: kubecon2024
+#     spec:
+#       requirements:
+#         - key: capacity-spread
+#           operator: In
+#           values: ["1"]
+#         - key: karpenter.sh/capacity-type
+#           operator: In
+#           values: ["on-demand"]
+#         - key: kubernetes.io/arch
+#           operator: In
+#           values: ["amd64", "arm64"]
+#         - key: karpenter.k8s.aws/instance-size
+#           operator: NotIn
+#           values: ["nano", "micro"]
+#       nodeClassRef:
+#         name: default
+# EOF
+
+# cat << EOF > $FILEPATH/node-pool-spot.yaml
+# apiVersion: karpenter.sh/v1beta1
+# kind: NodePool
+# metadata:
+#   name: spot
+#   labels:
+#     demo: kubecon2024
+# spec:
+#   disruption:
+#     consolidationPolicy: WhenUnderutilized
+#     expireAfter: 720h
+#   template:
+#     metadata:
+#       labels:
+#         demo: kubecon2024
+#     spec:
+#       requirements:
+#         - key: capacity-spread
+#           operator: In
+#           values: ["2", "3"]
+#         - key: karpenter.sh/capacity-type
+#           operator: In
+#           values: ["spot"]
+#         - key: kubernetes.io/arch
+#           operator: In
+#           values: ["amd64", "arm64"]
+#         - key: karpenter.k8s.aws/instance-size
+#           operator: NotIn
+#           values: ["nano", "micro"]
+#       nodeClassRef:
+#         name: default
+# EOF
+
+# #kubectl scale deployment tiny-workload --replicas=0
+# # cmd "cat node-pool-default.yaml"
+# # cmd "cat node-pool-spot.yaml"
+# cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
+# kubectl get nodepool default -o yaml | yq '.spec'
+
+# cmd "# -> look at the capacity-spread requirement on on-demand capacity"
+
+# cmd "kubectl apply -f $FILEPATH/node-pool-spot.yaml"
+# kubectl get nodepool spot -o yaml | yq '.spec'
+
+# cmd "# -> look at the capacity-spread requirement on on-demand capacity"
+
+
+# cat << EOF > $FILEPATH/deployment-default.yaml
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: tiny-workload
+#   labels:
+#     demo: kubecon2024
+# spec:
+#   selector:
+#     matchLabels:
+#       app: tiny-workload
+#   replicas: 60
+#   template:
+#     metadata:
+#       labels:
+#         app: tiny-workload
+#         demo: kubecon2024
+#     spec:
+#       nodeSelector:
+#         demo: kubecon2024
+#       containers:
+#       - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+#         name: tiny-workload
+#         resources:
+#           requests:
+#             cpu: "1512m"
+#             memory: 50Mi
+#       topologySpreadConstraints:
+#       - labelSelector:
+#           matchLabels:
+#             app: tiny-workload
+#         maxSkew: 1
+#         topologyKey: topology.kubernetes.io/zone
+#         whenUnsatisfiable: DoNotSchedule
+#       - labelSelector:
+#           matchLabels:
+#             app: tiny-workload
+#         maxSkew: 1
+#         topologyKey: capacity-spread
+#         whenUnsatisfiable: DoNotSchedule
+# EOF
+
+# # cmd "cat deployment-default.yaml"
+# cmd "kubectl apply -f $FILEPATH/deployment-default.yaml"
+# kubectl get deployment tiny-workload -o yaml | yq -r '.spec.template.spec'
+
+# cmd "#-> Look at the topologySpreadConstraints repartition"
+
 clear
-echo "## 10.) Split OD & Spot with a spread within AZs" | lolcat
-
-cat << EOF > $FILEPATH/node-pool-default.yaml
-apiVersion: karpenter.sh/v1beta1
-kind: NodePool
-metadata:
-  name: default
-  labels:
-    demo: kubecon2024
-spec:
-  disruption:
-    consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h
-  template:
-    metadata:
-      labels:
-        demo: kubecon2024
-    spec:
-      requirements:
-        - key: capacity-spread
-          operator: In
-          values: ["1"]
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["on-demand"]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64", "arm64"]
-        - key: karpenter.k8s.aws/instance-size
-          operator: NotIn
-          values: ["nano", "micro"]
-      nodeClassRef:
-        name: default
-EOF
-
-cat << EOF > $FILEPATH/node-pool-spot.yaml
-apiVersion: karpenter.sh/v1beta1
-kind: NodePool
-metadata:
-  name: spot
-  labels:
-    demo: kubecon2024
-spec:
-  disruption:
-    consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h
-  template:
-    metadata:
-      labels:
-        demo: kubecon2024
-    spec:
-      requirements:
-        - key: capacity-spread
-          operator: In
-          values: ["2", "3"]
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["spot"]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64", "arm64"]
-        - key: karpenter.k8s.aws/instance-size
-          operator: NotIn
-          values: ["nano", "micro"]
-      nodeClassRef:
-        name: default
-EOF
-
-#kubectl scale deployment tiny-workload --replicas=0
-# cmd "cat node-pool-default.yaml"
-# cmd "cat node-pool-spot.yaml"
-cmd "kubectl apply -f $FILEPATH/node-pool-default.yaml"
-kubectl get nodepool default -o yaml | yq '.spec'
-
-cmd "# -> look at the capacity-spread requirement on on-demand capacity"
-
-cmd "kubectl apply -f $FILEPATH/node-pool-spot.yaml"
-kubectl get nodepool spot -o yaml | yq '.spec'
-
-cmd "# -> look at the capacity-spread requirement on on-demand capacity"
-
-
-cat << EOF > $FILEPATH/deployment-default.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: tiny-workload
-  labels:
-    demo: kubecon2024
-spec:
-  selector:
-    matchLabels:
-      app: tiny-workload
-  replicas: 60
-  template:
-    metadata:
-      labels:
-        app: tiny-workload
-        demo: kubecon2024
-    spec:
-      nodeSelector:
-        demo: kubecon2024
-      containers:
-      - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
-        name: tiny-workload
-        resources:
-          requests:
-            cpu: "1512m"
-            memory: 50Mi
-      topologySpreadConstraints:
-      - labelSelector:
-          matchLabels:
-            app: tiny-workload
-        maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule
-      - labelSelector:
-          matchLabels:
-            app: tiny-workload
-        maxSkew: 1
-        topologyKey: capacity-spread
-        whenUnsatisfiable: DoNotSchedule
-EOF
-
-# cmd "cat deployment-default.yaml"
-cmd "kubectl apply -f $FILEPATH/deployment-default.yaml"
-kubectl get deployment tiny-workload -o yaml | yq -r '.spec.template.spec'
-
-cmd "#-> Look at the topologySpreadConstraints repartition"
-
-clear
-cmd "## 11.) THAT'S IT!" | lolcat
+cmd "## THAT'S IT!" | lolcat
 
 kubectl delete deployment tiny-workload
 kubectl delete nodepool default
