@@ -345,3 +345,10 @@ EOF
 # cmd "cat deployment-default.yaml"
 cmd "kubectl apply -f deployment-default.yaml"
 cmd "kubectl scale deployment inflate-workload --replicas=0"
+
+echo "Cleaning up ..."
+kubectl delete deployment inflate-workload > /dev/null 2>&1 || :
+kubectl delete --all nodeclaim > /dev/null 2>&1 || :
+kubectl delete --all nodepool > /dev/null 2>&1 || :
+kubectl delete --all ec2nodeclass > /dev/null 2>&1 || :
+rm -rf *.yaml
