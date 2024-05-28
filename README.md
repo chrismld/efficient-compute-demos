@@ -14,7 +14,7 @@ cmd "kubectl apply -f deployment.yaml"
 
 Here's the list of demos you can find in this repository:
 
-[**1. Running efficient compute Amazon EKS clusters using Karpenter, Spot, and Graviton:** ](/demo.sh) This demo has been used to showcase the value proposition of Karpenter, and how you can make the cluster more efficient (and cost-optimized) using Graviton and Spot. Here's a recording of the demo at the [DevOps Barcelona conference](https://www.youtube.com/watch?v=LLcF6IO6BQw&t=1096s).
+[**1. Running efficient compute Amazon EKS clusters using Karpenter, Spot, and Graviton:** ](/demo-karpenter.sh) This demo has been used to showcase the value proposition of Karpenter, and how you can make the cluster more efficient (and cost-optimized) using Graviton and Spot. Here's a recording of the demo at the [DevOps Barcelona conference](https://www.youtube.com/watch?v=LLcF6IO6BQw&t=1096s).
 
 [**2. Karpenter Consolidation, On-Demand/Spot split, and Spot interruptions:** ](/demo-flexco.sh) This demo is a simplified version of the previous demo, with the addition of showing how Spot interruptions are being handled with Karpenter.
 
