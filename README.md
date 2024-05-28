@@ -10,6 +10,18 @@ For instance, you could include within your demo bash script a command to create
 cmd "kubectl apply -f deployment.yaml"
 ```
 
+PR's are always welcome, and feel free to reuse or create your own demo based on the ones you find in this repository.
+
+## How to run a demo?
+
+Simply run the bash script, and press enter every time you want to continue with the next step. 
+
+For instance, you could start a demo like this:
+
+```
+sh demo-karpenter.sh
+```
+
 ## Demos
 
 Here's the list of demos you can find in this repository:
