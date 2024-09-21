@@ -50,6 +50,8 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
 EOF
 
 cat << EOF > ec2nodeclass-default.yaml
@@ -156,6 +158,8 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
 EOF
 
 # cmd "cat node-pool-default.yaml"
@@ -272,6 +276,8 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
 EOF
 
 # cmd "cat node-pool-default.yaml"
@@ -353,6 +359,8 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
 EOF
 
 cat << EOF > node-pool-spot.yaml
@@ -394,6 +402,8 @@ spec:
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
 EOF
 
 cmd "kubectl scale deployment inflate-workload --replicas=0"
