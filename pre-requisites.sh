@@ -14,5 +14,5 @@ sudo yum install figlet pv -y
 gem install lolcat
 
 
-eksdemo create cluster $EKS_CLUSTER_NAME --vpc-cidr 10.254.0.0/16 -N 3 --version 1.29
-eksdemo install autoscaling-karpenter -c $EKS_CLUSTER_NAME --chart-version v0.34.1 --version v0.34.1
+# eksdemo create cluster $EKS_CLUSTER_NAME --vpc-cidr 10.254.0.0/16 -N 3 --version 1.29
+# eksdemo install autoscaling-karpenter -c $EKS_CLUSTER_NAME --chart-version v0.34.1 --version v0.34.1
