@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ## 10-100
-SPEED=30
+SPEED=50
 #SPEED=1000
 
 function cmd() {
