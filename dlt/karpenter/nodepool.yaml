@@ -1,0 +1,57 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: default
+  labels:
+    demo: compute-optimization
+spec:
+  template:
+    metadata:
+      labels:
+        demo: compute-optimization
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: default
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot","on-demand"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: NotIn
+          values: [nano, micro, small, medium]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64","arm64"]
+        - key: "karpenter.k8s.aws/instance-generation"
+          operator: Gt
+          values: ["2"]
+  limits:
+    cpu: 1000
+    memory: 1000Gi
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 0s
+    budgets:
+    - nodes: "100%"
+---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default
+  labels:
+    demo: compute-optimization  
+spec:
+  role: "karpenter-karpenter-blueprints"
+  amiSelectorTerms:
+    - alias: "bottlerocket@latest"
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: karpenter-blueprints
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: karpenter-blueprints
+  tags:
+    Name: karpenter.sh/nodepool/default
+    NodeType: "efficient-demo"
