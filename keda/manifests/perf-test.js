@@ -10,6 +10,6 @@ export const options = {
 };
 
 export default function () {
-  http.get('http://ad3392667aef743bf98c6d3aa46d3898-1288783823.eu-west-1.elb.amazonaws.com/monte-carlo-pi?iterations=100000');
+  http.get('http://ad3392667aef743bf98c6d3aa46d3898-1288783823.eu-west-1.elb.amazonaws.com/simulate?iterations=100000');
   sleep(1);
 }
