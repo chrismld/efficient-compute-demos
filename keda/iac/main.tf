@@ -28,7 +28,11 @@ resource "aws_codebuild_project" "multi_arch_build" {
     type                        = each.value
     image_pull_credentials_type = "CODEBUILD"
     privileged_mode             = true
-
+    
+    environment_variable {
+      name  = "GIT_REPO_FOLDER"
+      value = var.github_repo_folder
+    }
     environment_variable {
       name  = "ECR_USERNAME"
       value = var.ecr_repository_username
@@ -49,7 +53,7 @@ resource "aws_codebuild_project" "multi_arch_build" {
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = "keda/app/buildspec.yml"
+    buildspec = "${var.github_repo_folder}buildspec.yml"
   }
 }
 
@@ -85,7 +89,7 @@ resource "aws_codebuild_project" "manifest_creation" {
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = "keda/app/buildspec-manifest.yml"
+    buildspec = "${var.github_repo_folder}buildspec-manifest.yml"
   }
 }
 
@@ -212,6 +216,11 @@ variable "git_branch" {
 
 variable "github_connection_name" {
   description = "Name of the existing GitHub connection"
+  type        = string
+}
+
+variable "github_repo_folder" {
+  description = "Git folder repository"
   type        = string
 }
 

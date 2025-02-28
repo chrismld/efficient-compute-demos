@@ -62,7 +62,8 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "ecr-public:InitiateLayerUpload",
           "ecr-public:UploadLayerPart",
           "ecr-public:CompleteLayerUpload",
-          "ecr-public:PutImage"
+          "ecr-public:PutImage",
+          "ecr-public:InitiateLayerUpload"
         ]
         Resource = "arn:aws:ecr-public::${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository_name}"
       },
