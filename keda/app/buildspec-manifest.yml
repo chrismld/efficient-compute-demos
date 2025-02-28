@@ -1,0 +1,15 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR Public...
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/${ECR_USERNAME}
+      - REPOSITORY_URI=public.ecr.aws/${IMAGE_REPO_NAME}
+  build:
+    commands:
+      - echo Creating multi-architecture manifest...
+      - docker manifest create $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-x86_64 $REPOSITORY_URI:$IMAGE_TAG-aarch64
+      - docker manifest annotate $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-x86_64 --arch amd64
+      - docker manifest annotate $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-aarch64 --arch arm64
+      - docker manifest push $REPOSITORY_URI:$IMAGE_TAG
