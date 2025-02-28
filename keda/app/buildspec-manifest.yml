@@ -9,7 +9,7 @@ phases:
   build:
     commands:
       - echo Creating multi-architecture manifest...
-      - docker manifest create $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-x86_64 $REPOSITORY_URI:$IMAGE_TAG-aarch64
+      - docker manifest create $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-x86_64 $REPOSITORY_URI:$IMAGE_TAG-arm64
       - docker manifest annotate $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-x86_64 --arch amd64
-      - docker manifest annotate $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-aarch64 --arch arm64
+      - docker manifest annotate $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG-arm64 --arch arm64
       - docker manifest push $REPOSITORY_URI:$IMAGE_TAG

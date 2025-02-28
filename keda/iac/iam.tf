@@ -41,12 +41,16 @@ resource "aws_iam_role_policy" "codebuild_policy" {
         ]
       },
       {
-        Effect   = "Allow"
-        Resource = "*"
+        Effect = "Allow"
         Action = [
-          "ecr-public:GetAuthorizationToken",
-          "sts:GetServiceBearerToken"
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:CompleteLayerUpload",
+          "ecr:GetAuthorizationToken",
+          "ecr:InitiateLayerUpload",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart"
         ]
+        Resource = "*"
       },
       {
         Effect = "Allow"

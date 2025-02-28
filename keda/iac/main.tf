@@ -11,7 +11,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_codebuild_project" "multi_arch_build" {
   for_each = {
     x86_64  = "LINUX_CONTAINER"
-    aarch64 = "ARM_CONTAINER"
+    arm64 = "ARM_CONTAINER"
   }
 
   name         = "multi-arch-build-${each.key}"
@@ -25,6 +25,7 @@ resource "aws_codebuild_project" "multi_arch_build" {
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
     image                       = "aws/codebuild/amazonlinux2-${each.key}:latest"
+    image                       = each.key == "x86_64" ? "aws/codebuild/amazonlinux2-x86_64-standard:5.0" : "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
     type                        = each.value
     image_pull_credentials_type = "CODEBUILD"
     privileged_mode             = true
