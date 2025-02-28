@@ -68,7 +68,7 @@ resource "aws_codebuild_project" "manifest_creation" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-x86_64:latest"
+    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
     privileged_mode             = true
@@ -178,7 +178,7 @@ resource "aws_codepipeline" "multi_arch_pipeline" {
       category        = "Build"
       owner           = "AWS"
       provider        = "CodeBuild"
-      input_artifacts = ["source_output", "x86_64_build_output", "arm64_build_output"]
+      input_artifacts = ["source_output"]
       version         = "1"
 
       configuration = {

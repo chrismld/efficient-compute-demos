@@ -29,19 +29,6 @@ resource "aws_iam_role_policy" "codebuild_policy" {
       },
       {
         Effect = "Allow"
-        Resource = [
-          "arn:aws:ecr-public::${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository_name}"
-        ]
-        Action = [
-          "ecr-public:BatchCheckLayerAvailability",
-          "ecr-public:CompleteLayerUpload",
-          "ecr-public:InitiateLayerUpload",
-          "ecr-public:PutImage",
-          "ecr-public:UploadLayerPart"
-        ]
-      },
-      {
-        Effect = "Allow"
         Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:CompleteLayerUpload",
@@ -62,10 +49,9 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "ecr-public:InitiateLayerUpload",
           "ecr-public:UploadLayerPart",
           "ecr-public:CompleteLayerUpload",
-          "ecr-public:PutImage",
-          "ecr-public:InitiateLayerUpload"
+          "ecr-public:PutImage"
         ]
-        Resource = "arn:aws:ecr-public::${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository_name}"
+        Resource = "*"
       },
       {
         Effect = "Allow"
