@@ -24,7 +24,6 @@ resource "aws_codebuild_project" "multi_arch_build" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-${each.key}:latest"
     image                       = each.key == "x86_64" ? "aws/codebuild/amazonlinux2-x86_64-standard:5.0" : "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
     type                        = each.value
     image_pull_credentials_type = "CODEBUILD"
@@ -162,7 +161,7 @@ resource "aws_codepipeline" "multi_arch_pipeline" {
       version          = "1"
 
       configuration = {
-        ProjectName = aws_codebuild_project.multi_arch_build["aarch64"].name
+        ProjectName = aws_codebuild_project.multi_arch_build["arm64"].name
       }
     }
   }

@@ -8,6 +8,7 @@ phases:
       - REPOSITORY_URI=public.ecr.aws/${IMAGE_REPO_NAME}
   build:
     commands:
+      - cd keda/app/
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:$IMAGE_TAG-$ARCHITECTURE .
       - docker tag $REPOSITORY_URI:$IMAGE_TAG-$ARCHITECTURE $REPOSITORY_URI:$IMAGE_TAG-$ARCHITECTURE
