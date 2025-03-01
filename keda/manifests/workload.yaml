@@ -32,6 +32,8 @@ metadata:
   name: montecarlo-pi
   labels:
     app: montecarlo-pi
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
 spec:
   ports:
   - name: http

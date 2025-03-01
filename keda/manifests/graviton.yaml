@@ -40,6 +40,8 @@ metadata:
   name: montecarlo-pi-graviton
   labels:
     app: montecarlo-pi-graviton
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
 spec:
   ports:
   - name: http
