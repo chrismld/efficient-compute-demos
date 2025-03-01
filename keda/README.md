@@ -17,14 +17,21 @@ curl https://raw.githubusercontent.com/grafana/k6-operator/main/bundle.yaml | ku
 
 kubectl apply -f nodepool.yaml
 kubectl apply -f workload.yaml
+kubectl apply -f graviton.yaml
+kubectl apply -f x86.yaml
 
-kubectl create configmap perf-test --from-file perf-test.js
-kubectl apply -f perf-test.yaml
-
-kubectl delete configmap perf-test
-kubectl delete -f perf-test.yaml
+k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" load-test.js
 
 watch kubectl get scaledobject,hpa,pods
+
+kubectl scale deployment montecarlo-pi-graviton --replicas=0
+kubectl scale deployment montecarlo-pi-x86 --replicas=0
+
+kubectl scale deployment montecarlo-pi-graviton --replicas=10
+kubectl scale deployment montecarlo-pi-x86 --replicas=10
+
+k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-x86 --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
+k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-graviton --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
 
 ## Demo Story
 

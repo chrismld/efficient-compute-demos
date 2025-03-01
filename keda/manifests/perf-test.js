@@ -1,15 +1,23 @@
 import http from 'k6/http';
-import { sleep } from 'k6';
+import { check, sleep } from 'k6';
 
 export const options = {
-  stages: [
-    { duration: '30s', target: 400 }, // ramp up to 400 users
-    { duration: '1m', target: 400 }, // stay at 400 for ~4 hours
-    { duration: '30s', target: 0 }, // scale down. (optional)
-  ],
+  vus: 300,
+  duration: '5m',
 };
 
+const ITERATIONS = 750000;  // Fixed number of iterations for consistency
+
 export default function () {
-  http.get('http://ad3392667aef743bf98c6d3aa46d3898-1288783823.eu-west-1.elb.amazonaws.com/simulate?iterations=100000');
-  sleep(1);
+  const url = `http://${__ENV.MY_HOSTNAME}/simulate?iterations=${ITERATIONS}`;
+
+  const res = http.get(url);
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'latency < 500ms': (r) => r.timings.duration < 500,
+  });
+
+  // Add a small sleep to prevent overwhelming the system
+  sleep(0.05);
 }

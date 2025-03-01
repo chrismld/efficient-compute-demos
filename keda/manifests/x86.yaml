@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: montecarlo-pi-x86
 spec:
-  replicas: 10
+  replicas: 0
   selector:
     matchLabels:
       app: montecarlo-pi-x86
@@ -15,7 +15,7 @@ spec:
       nodeSelector:
         intent: x86
         karpenter.sh/capacity-type: on-demand
-        eks.amazonaws.com/instance-family: "c6i"
+        eks.amazonaws.com/instance-family: "c7i"
       tolerations:
       - key: x86
         operator: Exists

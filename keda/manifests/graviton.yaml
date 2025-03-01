@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: montecarlo-pi-graviton
 spec:
-  replicas: 10
+  replicas: 0
   selector:
     matchLabels:
       app: montecarlo-pi-graviton
@@ -15,7 +15,7 @@ spec:
       nodeSelector:
         intent: graviton
         karpenter.sh/capacity-type: on-demand
-        eks.amazonaws.com/instance-family: "c7g"
+        eks.amazonaws.com/instance-family: "c8g"
       tolerations:
       - key: graviton
         operator: Exists
