@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: montecarlo-pi-graviton
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: montecarlo-pi-graviton
+  template:
+    metadata:
+      labels:
+        app: montecarlo-pi-graviton
+    spec:
+      nodeSelector:
+        intent: graviton
+        karpenter.sh/capacity-type: on-demand
+        eks.amazonaws.com/instance-family: "c7g"
+      tolerations:
+      - key: graviton
+        operator: Exists
+      containers:
+      - name: montecarlo-pi-graviton
+        image: public.ecr.aws/chrismld/montecarlo-pi
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        resources:
+          requests:
+            cpu: 900m
+            memory: 512Mi
+          limits:
+            cpu: 1200m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: montecarlo-pi-graviton
+  labels:
+    app: montecarlo-pi-graviton
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: montecarlo-pi-graviton
+  type: LoadBalancer

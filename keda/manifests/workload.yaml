@@ -11,11 +11,6 @@ spec:
       labels:
         app: montecarlo-pi
     spec:
-      nodeSelector:
-        intent: x86
-      tolerations:
-      - key: x86
-        operator: Exists
       containers:
       - name: montecarlo-pi
         image: public.ecr.aws/chrismld/montecarlo-pi

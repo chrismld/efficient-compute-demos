@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: montecarlo-pi-x86
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: montecarlo-pi-x86
+  template:
+    metadata:
+      labels:
+        app: montecarlo-pi-x86
+    spec:
+      nodeSelector:
+        intent: x86
+        karpenter.sh/capacity-type: on-demand
+        eks.amazonaws.com/instance-family: "c6i"
+      tolerations:
+      - key: x86
+        operator: Exists
+      containers:
+      - name: montecarlo-pi-x86
+        image: public.ecr.aws/chrismld/montecarlo-pi
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        resources:
+          requests:
+            cpu: 900m
+            memory: 512Mi
+          limits:
+            cpu: 1200m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: montecarlo-pi-x86
+  labels:
+    app: montecarlo-pi-x86
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: montecarlo-pi-x86
+  type: LoadBalancer
