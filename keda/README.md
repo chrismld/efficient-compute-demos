@@ -20,9 +20,63 @@ kubectl apply -f workload.yaml
 kubectl apply -f graviton.yaml
 kubectl apply -f x86.yaml
 
-k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" load-test.js
+
+eks-node-viewer --node-selector karpenter.sh/nodepool=general-purpose
 
 watch kubectl get scaledobject,hpa,pods
+
+k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" load-test.js
+
+cat <<EOF | kubectl apply -f -
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: eks
+  name: general-purpose
+spec:
+  disruption:
+    budgets:
+    - nodes: 10%
+    consolidateAfter: 30s
+    consolidationPolicy: WhenEmptyOrUnderutilized
+  template:
+    metadata: {}
+    spec:
+      expireAfter: 336h
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        name: default
+      requirements:
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - on-demand
+        - spot
+      - key: eks.amazonaws.com/instance-category
+        operator: In
+        values:
+        - c
+        - m
+        - r
+      - key: eks.amazonaws.com/instance-generation
+        operator: Gt
+        values:
+        - "4"
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+        - arm64
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      terminationGracePeriod: 24h0m0s
+EOF
+
+----------
 
 kubectl scale deployment montecarlo-pi-graviton --replicas=0
 kubectl scale deployment montecarlo-pi-x86 --replicas=0
@@ -32,6 +86,12 @@ kubectl scale deployment montecarlo-pi-x86 --replicas=10
 
 k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-x86 --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
 k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-graviton --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
+
+watch kubectl top nodes -l karpenter.sh/nodepool=x86
+watch kubectl top nodes -l karpenter.sh/nodepool=graviton
+
+eks-node-viewer --node-selector karpenter.sh/nodepool=x86
+eks-node-viewer --node-selector karpenter.sh/nodepool=graviton
 
 ## Demo Story
 
