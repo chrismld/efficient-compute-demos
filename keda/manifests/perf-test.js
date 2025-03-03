@@ -2,11 +2,11 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export const options = {
-  vus: 350,
+  vus: 300,
   duration: '5m',
 };
 
-const ITERATIONS = 850000;  // Fixed number of iterations for consistency
+const ITERATIONS = 500000;  // Fixed number of iterations for consistency
 
 export default function () {
   const url = `http://${__ENV.MY_HOSTNAME}/simulate?iterations=${ITERATIONS}`;

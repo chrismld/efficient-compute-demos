@@ -81,8 +81,8 @@ EOF
 kubectl scale deployment montecarlo-pi-graviton --replicas=0
 kubectl scale deployment montecarlo-pi-x86 --replicas=0
 
-kubectl scale deployment montecarlo-pi-graviton --replicas=10
-kubectl scale deployment montecarlo-pi-x86 --replicas=10
+kubectl scale deployment montecarlo-pi-graviton --replicas=17
+kubectl scale deployment montecarlo-pi-x86 --replicas=17
 
 k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-x86 --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
 k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-graviton --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
@@ -92,6 +92,24 @@ watch kubectl top nodes -l karpenter.sh/nodepool=graviton
 
 eks-node-viewer --node-selector karpenter.sh/nodepool=x86
 eks-node-viewer --node-selector karpenter.sh/nodepool=graviton
+
+### Analyze Performance Test Results with Amazon Q
+
+```
+Help me do the math or at least explain in a simple way the price-performance improvements you get with Graviton. I've done a performance test comparing both x86 and Graviton, and here's what I got:
+
+For x86, the estimated monthly payment will be $559.238, and these are the results I got from the k6 performance test:
+
+[K6 PERFORMANCE TEST RESULTS FOR x86]
+
+[/K6 PERFORMANCE TEST RESULTS FOR x86]
+
+For Graviton, the estimated monthly payment will be $498.035, and these are the results I got from the k6 performance test:
+
+[K6 PERFORMANCE TEST RESULTS FOR Graviton]
+
+[/K6 PERFORMANCE TEST RESULTS FOR Graviton]
+```
 
 ## Demo Story
 
