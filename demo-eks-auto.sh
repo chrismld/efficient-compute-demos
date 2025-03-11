@@ -273,86 +273,105 @@ cat << EOF > node-pool-default.yaml
 apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
-  name: general-purpose
   labels:
-    demo: compute-optimization
+    app.kubernetes.io/managed-by: eks
+  name: general-purpose
 spec:
+  disruption:
+    budgets:
+    - nodes: 10%
+    consolidateAfter: 30s
+    consolidationPolicy: WhenEmptyOrUnderutilized
   template:
-    metadata:
-      labels:
-        demo: compute-optimization
+    metadata: {}
     spec:
+      expireAfter: 336h
       nodeClassRef:
-        group: karpenter.k8s.aws
-        kind: EC2NodeClass
+        group: eks.amazonaws.com
+        kind: NodeClass
         name: default
       requirements:
-        - key: capacity-spread
+      - key: capacity-spread
           operator: In
           values: ["1"]
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["on-demand"]
-        - key: karpenter.k8s.aws/instance-size
-          operator: NotIn
-          values: [nano, micro, small, medium, large]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64","arm64"]
-        - key: "karpenter.k8s.aws/instance-generation"
-          operator: Gt
-          values: ["2"]
-  limits:
-    cpu: 1000
-    memory: 1000Gi
-  disruption:
-    consolidationPolicy: WhenEmptyOrUnderutilized
-    consolidateAfter: 0s
-    budgets:
-    - nodes: "100%"
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - on-demand
+      - key: eks.amazonaws.com/instance-category
+        operator: In
+        values:
+        - c
+        - m
+        - r
+      - key: eks.amazonaws.com/instance-generation
+        operator: Gt
+        values:
+        - "4"
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+        - arm64
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      terminationGracePeriod: 24h0m0s
 EOF
 
 cat << EOF > node-pool-spot.yaml
 apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
-  name: spot
   labels:
-    demo: compute-optimization
+    app.kubernetes.io/managed-by: eks
+  name: spot
 spec:
+  disruption:
+    budgets:
+    - nodes: 10%
+    consolidateAfter: 30s
+    consolidationPolicy: WhenEmptyOrUnderutilized
   template:
-    metadata:
-      labels:
-        demo: compute-optimization
+    metadata: {}
     spec:
+      expireAfter: 336h
       nodeClassRef:
-        group: karpenter.k8s.aws
-        kind: EC2NodeClass
+        group: eks.amazonaws.com
+        kind: NodeClass
         name: default
       requirements:
-        - key: capacity-spread
+      - key: capacity-spread
           operator: In
           values: ["2", "3", "4", "5"]
-        - key: karpenter.sh/capacity-type
+      - key: capacity-spread
           operator: In
-          values: ["spot"]
-        - key: karpenter.k8s.aws/instance-size
-          operator: NotIn
-          values: [nano, micro, small, medium, large]
-        - key: kubernetes.io/arch
-          operator: In
-          values: ["amd64","arm64"]
-        - key: "karpenter.k8s.aws/instance-generation"
-          operator: Gt
-          values: ["2"]
-  limits:
-    cpu: 1000
-    memory: 1000Gi
-  disruption:
-    consolidationPolicy: WhenEmptyOrUnderutilized
-    consolidateAfter: 0s
-    budgets:
-    - nodes: "100%"
+          values: ["1"]
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - spot
+      - key: eks.amazonaws.com/instance-category
+        operator: In
+        values:
+        - c
+        - m
+        - r
+      - key: eks.amazonaws.com/instance-generation
+        operator: Gt
+        values:
+        - "4"
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+        - arm64
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      terminationGracePeriod: 24h0m0s
 EOF
 
 cmd "kubectl scale deployment inflate-workload --replicas=0"
