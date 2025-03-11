@@ -11,6 +11,11 @@ spec:
       labels:
         app: montecarlo-pi
     spec:
+      nodeSelector:
+        intent: x86
+      tolerations:
+      - key: x86
+        operator: Exists
       containers:
       - name: montecarlo-pi
         image: public.ecr.aws/chrismld/montecarlo-pi
@@ -67,11 +72,26 @@ spec:
     name: montecarlo-pi
   minReplicaCount: 1
   maxReplicaCount: 10
+  # advanced:
+  #   horizontalPodAutoscalerConfig: 
+  #     behavior:
+  #       scaleUp:
+  #         stabilizationWindowSeconds: 0
+  #         policies:
+  #         - type: Percent
+  #           value: 100
+  #           periodSeconds: 5
+  #       scaleDown:
+  #         stabilizationWindowSeconds: 60
+  #         policies:
+  #         - type: Percent
+  #           value: 100
+  #           periodSeconds: 5
   triggers:
   - type: prometheus
     metadata:
       serverAddress: http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090
       metricName: monte_carlo_latency_seconds
-      threshold: "0.5"
+      threshold: "0.5" # SLA is 0.8 or 800ms really, but we want to scale out before
       query: |
-        histogram_quantile(0.95, sum(rate(monte_carlo_latency_seconds_bucket{status="200"}[2m])) by (le))
+        histogram_quantile(0.90, sum(rate(monte_carlo_latency_seconds_bucket{status="200"}[1m])) by (le))

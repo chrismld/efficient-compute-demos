@@ -3,16 +3,21 @@ import { sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '30s', target: 400 }, // ramp up to 400 users
-    { duration: '1m', target: 400 }, // stay at 400 for ~4 hours
-    { duration: '30s', target: 0 }, // scale down. (optional)
+    { duration: '120s', target: 30 },
+    { duration: '120s', target: 45 },
+    { duration: '90s', target: 60 },
+    { duration: '90s', target: 75 },
+    { duration: '90', target: 90 },
+    { duration: '30s', target: 100 },
+    { duration: '15s', target: 0 },
   ],
+  noConnectionReuse: true,
 };
 
-const ITERATIONS = 100000;  // Fixed number of iterations for consistency
+const ITERATIONS = 500000;  // Fixed number of iterations for consistency
 
 export default function () {
-  const url = `http://${__ENV.MY_HOSTNAME}/simulate?iterations=${ITERATIONS}`;
+  const url = `http://montecarlo-pi.default.svc.cluster.local/simulate?iterations=${ITERATIONS}`;
   http.get(url);
-  sleep(1);
+  sleep(0.5);
 }

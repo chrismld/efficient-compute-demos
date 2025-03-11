@@ -2,14 +2,14 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export const options = {
-  vus: 300,
+  vus: 100,
   duration: '5m',
 };
 
 const ITERATIONS = 500000;  // Fixed number of iterations for consistency
 
 export default function () {
-  const url = `http://${__ENV.MY_HOSTNAME}/simulate?iterations=${ITERATIONS}`;
+  const url = `http://montecarlo-pi-graviton/simulate?iterations=${ITERATIONS}`;
 
   const res = http.get(url);
 

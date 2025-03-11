@@ -1,19 +1,23 @@
 # Scaling workloads with KEDA and Karpenter
 
-## Setup
+## TODO
+
+Setup the k6 tests in the Kubernetes cluster
+Create a real-world k6 test
+
+## Tools setup
 
 ```
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add kedacore https://kedacore.github.io/charts
 helm repo update
-helm install keda kedacore/keda --namespace keda --create-namespace
+helm install keda 
+helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+helm install k6-operator grafana/k6-operator 
 ```
 
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
-kubectl get pods -n monitoring
-
-curl https://raw.githubusercontent.com/grafana/k6-operator/main/bundle.yaml | kubectl apply -f -
+## Demo manifests
 
 kubectl apply -f nodepool.yaml
 kubectl apply -f workload.yaml
@@ -22,8 +26,25 @@ kubectl apply -f x86.yaml
 
 
 eks-node-viewer --node-selector karpenter.sh/nodepool=general-purpose
+watch kubectl top nodes -l karpenter.sh/nodepool=general-purpose
 
 watch kubectl get scaledobject,hpa,pods
+
+```
+kubectl create configmap k6-test-scripts \
+ --from-file=manifests/load-test.js \
+ --from-file=manifests/perf-test-x86.js \
+ --from-file=manifests/perf-test-graviton.js
+
+```
+
+```
+kubectl apply -f manifests/k6-load-test.yaml
+kubectl logs -l k6_cr=load-test --tail=-1
+
+kubectl apply -f manifests/k6-perf-test.yaml
+kubectl logs -l k6_cr=perf-test --tail=-1
+```
 
 k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" load-test.js
 
@@ -78,8 +99,8 @@ EOF
 
 ----------
 
-kubectl scale deployment montecarlo-pi-graviton --replicas=0
-kubectl scale deployment montecarlo-pi-x86 --replicas=0
+kubectl delete scaledobject montecarlo-pi-latency
+kubectl scale deployment montecarlo-pi --replicas=0
 
 kubectl scale deployment montecarlo-pi-graviton --replicas=17
 kubectl scale deployment montecarlo-pi-x86 --replicas=17

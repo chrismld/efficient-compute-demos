@@ -50,4 +50,5 @@ EOF
 kubectl scale deployment montecarlo-pi --replicas=0
 kubectl scale deployment montecarlo-pi-graviton --replicas=0
 kubectl scale deployment montecarlo-pi-x86 --replicas=0
-
+kubectl delete configmap load-test-script
+kubectl delete configmap perf-test-script
