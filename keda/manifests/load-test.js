@@ -10,8 +10,7 @@ export const options = {
     { duration: '90', target: 90 },
     { duration: '30s', target: 100 },
     { duration: '15s', target: 0 },
-  ],
-  noConnectionReuse: true,
+  ]
 };
 
 const ITERATIONS = 500000;  // Fixed number of iterations for consistency
@@ -19,5 +18,5 @@ const ITERATIONS = 500000;  // Fixed number of iterations for consistency
 export default function () {
   const url = `http://montecarlo-pi.default.svc.cluster.local/simulate?iterations=${ITERATIONS}`;
   http.get(url);
-  sleep(0.5);
+  sleep(1);
 }

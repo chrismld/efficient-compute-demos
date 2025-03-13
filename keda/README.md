@@ -17,7 +17,7 @@ helm install prometheus prometheus-community/kube-prometheus-stack --namespace m
 helm install k6-operator grafana/k6-operator 
 ```
 
-## Demo manifests
+## Demo - Phase I
 
 kubectl apply -f nodepool.yaml
 kubectl apply -f workload.yaml
@@ -25,79 +25,28 @@ kubectl apply -f graviton.yaml
 kubectl apply -f x86.yaml
 
 
-eks-node-viewer --node-selector karpenter.sh/nodepool=general-purpose
-watch kubectl top nodes -l karpenter.sh/nodepool=general-purpose
+eks-node-viewer --node-selector karpenter.sh/nodepool=multiarch
+watch kubectl top nodes -l karpenter.sh/nodepool=multiarch
 
-watch kubectl get scaledobject,hpa,pods
+watch kubectl get hpa
 
 ```
+kubectl delete configmap k6-test-scripts
 kubectl create configmap k6-test-scripts \
  --from-file=manifests/load-test.js \
  --from-file=manifests/perf-test-x86.js \
  --from-file=manifests/perf-test-graviton.js
-
 ```
 
-```
+kubectl delete job load-test-1
 kubectl apply -f manifests/k6-load-test.yaml
-kubectl logs -l k6_cr=load-test --tail=-1
+kubectl logs -l k6_cr=load-test -f
 
-kubectl apply -f manifests/k6-perf-test.yaml
-kubectl logs -l k6_cr=perf-test --tail=-1
-```
+echo "Show main.go"
+echo "Show ServiceMonitor, ScaledObject"
+echo "Go back to the terminal 1"
 
-k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" load-test.js
-
-cat <<EOF | kubectl apply -f -
-apiVersion: karpenter.sh/v1
-kind: NodePool
-metadata:
-  labels:
-    app.kubernetes.io/managed-by: eks
-  name: general-purpose
-spec:
-  disruption:
-    budgets:
-    - nodes: 10%
-    consolidateAfter: 30s
-    consolidationPolicy: WhenEmptyOrUnderutilized
-  template:
-    metadata: {}
-    spec:
-      expireAfter: 336h
-      nodeClassRef:
-        group: eks.amazonaws.com
-        kind: NodeClass
-        name: default
-      requirements:
-      - key: karpenter.sh/capacity-type
-        operator: In
-        values:
-        - on-demand
-        - spot
-      - key: eks.amazonaws.com/instance-category
-        operator: In
-        values:
-        - c
-        - m
-        - r
-      - key: eks.amazonaws.com/instance-generation
-        operator: Gt
-        values:
-        - "4"
-      - key: kubernetes.io/arch
-        operator: In
-        values:
-        - amd64
-        - arm64
-      - key: kubernetes.io/os
-        operator: In
-        values:
-        - linux
-      terminationGracePeriod: 24h0m0s
-EOF
-
-----------
+## Demo - Phase II
 
 kubectl delete scaledobject montecarlo-pi-latency
 kubectl scale deployment montecarlo-pi --replicas=0
@@ -105,16 +54,23 @@ kubectl scale deployment montecarlo-pi --replicas=0
 kubectl scale deployment montecarlo-pi-graviton --replicas=17
 kubectl scale deployment montecarlo-pi-x86 --replicas=17
 
-k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-x86 --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
-k6 run -e MY_HOSTNAME=$(kubectl get service montecarlo-pi-graviton --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}') --address="" perf-test.js
+kubectl apply -f manifests/perf-test-x86.yaml
+
+kubectl apply -f manifests/perf-test-graviton.yaml
+
 
 watch kubectl top nodes -l karpenter.sh/nodepool=x86
 watch kubectl top nodes -l karpenter.sh/nodepool=graviton
 
+eks-node-viewer --extra-labels karpenter.sh/nodepool
 eks-node-viewer --node-selector karpenter.sh/nodepool=x86
 eks-node-viewer --node-selector karpenter.sh/nodepool=graviton
 
-### Analyze Performance Test Results with Amazon Q
+echo "Show multiarch pipeline"
+echo "Show buildspec.yml, buildspec-manifest.yml"
+echo "Go back to the terminal 2"
+
+echo "Use Amazon Q to analyze the results"
 
 ```
 Help me do the math or at least explain in a simple way the price-performance improvements you get with Graviton. I've done a performance test comparing both x86 and Graviton, and here's what I got:
@@ -132,6 +88,10 @@ For Graviton, the estimated monthly payment will be $498.035, and these are the 
 [/K6 PERFORMANCE TEST RESULTS FOR Graviton]
 ```
 
+cat <<EOF | kubectl apply -f -
+
+EOF
+
 ## Demo Story
 
 ### Act I - Why?
@@ -141,14 +101,13 @@ For Graviton, the estimated monthly payment will be $498.035, and these are the 
 
 ### Act II - Preparing
 * Setup the cluster, verify we have Karpenter and KEDA controllers running.
-
-### Act III - Elasticity
-* Deploy a Monte Carlo PI service, instrumented to expose latency metrics for Prometheus
 * Deploy Prometheus
 * Deploy the Service Monitor to scrape metrics from the Monte Carlo PI service
 * Delloy the ScaledObject to scale the service based on latency using KEDA
+
+### Act III - Elasticity
+* Deploy a Monte Carlo PI service, instrumented to expose latency metrics for Prometheus
 * Run a small load test using k6 to see KEDA scaling the workload, and Karpenter scaling the nodes.
-* (Optional) If time permits or it's a recoding session, we can see how KEDA scales down the workload when there's not load.
 
 ### Act IV - Price Performance with Graviton
 
