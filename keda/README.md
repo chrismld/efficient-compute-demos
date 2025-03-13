@@ -70,6 +70,10 @@ echo "Show multiarch pipeline"
 echo "Show buildspec.yml, buildspec-manifest.yml"
 echo "Go back to the terminal 2"
 
+echo "Change the nodeSelector to request Spot"
+
+kubectl apply -f manifests/workload.yaml
+
 echo "Use Amazon Q to analyze the results"
 
 ```

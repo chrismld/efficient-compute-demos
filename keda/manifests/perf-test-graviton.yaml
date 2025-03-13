@@ -1,7 +1,7 @@
 apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
-  name: load-test
+  name: perf-test-graviton
 spec:
   quiet: "false"
   cleanup: post
@@ -9,7 +9,7 @@ spec:
   script:
     configMap:
       name: k6-test-scripts
-      file: load-test.js
+      file: perf-test-graviton.js
   runner:
     resources:
       requests:
