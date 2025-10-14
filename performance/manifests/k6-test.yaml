@@ -11,7 +11,7 @@ data:
       scenarios: {
         constant_load: {
           executor: 'constant-vus',
-          vus: 100,
+          vus: 85,
           duration: '5m',
         },
       },

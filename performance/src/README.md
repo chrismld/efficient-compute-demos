@@ -174,14 +174,43 @@ Compressed logs are base64-encoded for safe transmission and storage.
 
 ## Load Testing
 
-To stress the application, run the following commands:
+The service includes k6 load tests to validate performance under high traffic. The k6 operator must be installed in your cluster.
+
+### Run Load Test
 
 ```bash
-kubectl delete testrun log-aggregator-load-test
-kubectl apply -f performance/manifests/k6-test.yaml
-watch kubectl top pod -l app=log-aggregator
+# Apply the k6 test manifest
+kubectl apply -f ../manifests/k6-test.yaml
+
+# Monitor the log-aggregator CPU usage
+kubectl top pod -l app=log-aggregator --watch
+
+# View k6 test logs (12 pods will be created)
 kubectl logs -l k6_cr=log-aggregator-load-test -f --max-log-requests 14
 ```
+
+### Re-run Load Test
+
+```bash
+# Delete the existing test run
+kubectl delete testrun log-aggregator-load-test
+
+# Wait for pods to terminate
+kubectl get pods -l k6_cr=log-aggregator-load-test
+
+# Apply again
+kubectl apply -f ../manifests/k6-test.yaml
+```
+
+### Load Test Configuration
+
+The test runs with:
+- **12 parallel k6 pods** (1,020 total virtual users)
+- **85 VUs per pod** for 5 minutes
+- **1,000 logs per batch** with large messages
+- Target: ~90% CPU utilization on the log-aggregator pod
+
+To adjust load intensity, modify the `vus` value in the ConfigMap (85 = ~90% CPU, 100 = ~100%+ CPU).
 
 ## Troubleshooting
 
