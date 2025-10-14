@@ -172,6 +172,17 @@ Compressed logs are base64-encoded for safe transmission and storage.
 - Enable TLS for production deployments
 - Implement authentication/authorization as needed
 
+## Load Testing
+
+To stress the application, run the following commands:
+
+```bash
+kubectl delete testrun log-aggregator-load-test
+kubectl apply -f performance/manifests/k6-test.yaml
+watch kubectl top pod -l app=log-aggregator
+kubectl logs -l k6_cr=log-aggregator-load-test -f --max-log-requests 14
+```
+
 ## Troubleshooting
 
 ### Pod not starting
@@ -187,14 +198,4 @@ kubectl get endpoints log-aggregator-service
 
 # Use NodePort if LoadBalancer unavailable
 kubectl patch svc log-aggregator-service -p '{"spec":{"type":"NodePort"}}'
-```
-
-### Multi-arch build issues
-```bash
-# Verify buildx setup
-docker buildx ls
-docker buildx inspect multiarch
-
-# Create new builder if needed
-docker buildx create --name multiarch --driver docker-container --use
 ```
