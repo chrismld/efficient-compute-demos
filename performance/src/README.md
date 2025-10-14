@@ -1,0 +1,206 @@
+# Log Aggregation Service
+
+A lightweight HTTP service for collecting and storing application logs with automatic compression. Built with Go and LZ4 compression to efficiently handle high-volume log ingestion.
+
+## Overview
+
+This service provides a simple API for applications to submit batches of log entries. Logs are automatically compressed using LZ4 before storage, reducing storage costs and improving transmission efficiency.
+
+## Features
+
+- **Batch Log Ingestion**: Accept multiple log entries in a single request
+- **Automatic Compression**: LZ4 compression reduces storage footprint by 60-80%
+- **Multi-Architecture**: Runs on both ARM64 and x86-64 architectures
+- **Health Monitoring**: Built-in health check endpoint
+- **Kubernetes Ready**: Production-ready manifests included
+
+## Quick Start
+
+### Build Multi-Architecture Image
+
+```bash
+# Create and use buildx builder
+docker buildx create --name multiarch --use
+docker buildx inspect --bootstrap
+
+# Build for multiple architectures
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t your-registry/log-aggregator:latest \
+  --push .
+```
+
+### Deploy to Kubernetes
+
+```bash
+# Update the image in the deployment manifest
+kubectl apply -f k8s-deployment.yaml
+
+# Verify deployment
+kubectl get pods -l app=log-aggregator
+kubectl get svc log-aggregator-service
+```
+
+### Test the Service
+
+```bash
+# Port forward to access locally
+kubectl port-forward svc/log-aggregator-service 8080:8080
+
+# Submit a batch of logs
+curl -X POST http://localhost:8080/api/logs/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "logs": [
+      {
+        "timestamp": "2025-10-14T10:30:00Z",
+        "level": "info",
+        "message": "Application started successfully",
+        "metadata": {
+          "service": "api-gateway",
+          "version": "1.2.3"
+        }
+      },
+      {
+        "timestamp": "2025-10-14T10:30:05Z",
+        "level": "error",
+        "message": "Database connection timeout",
+        "metadata": {
+          "service": "api-gateway",
+          "retry_count": 3
+        }
+      }
+    ]
+  }'
+
+# Check health
+curl http://localhost:8080/health
+```
+
+## API Reference
+
+### POST /api/logs/batch
+
+Submit a batch of log entries for storage.
+
+**Request Body:**
+```json
+{
+  "logs": [
+    {
+      "timestamp": "2025-10-14T10:30:00Z",
+      "level": "info|warn|error|debug",
+      "message": "Log message text",
+      "metadata": {
+        "key": "value"
+      }
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "received": 2,
+  "stored": "H4sIAAAAAAAA/6pWKkktLlGyUlAqS8wpTtVRKi1OLUpV...",
+  "original_bytes": 245,
+  "stored_bytes": 98,
+  "compression_pct": 60,
+  "processing_time": "1.234ms"
+}
+```
+
+### GET /health
+
+Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "architecture": "arm64",
+  "go_version": "go1.21.0",
+  "timestamp": "2025-10-14T10:30:00Z"
+}
+```
+
+## Deployment Configuration
+
+The service includes three deployment options:
+
+1. **Generic Deployment** (`log-aggregator-service`): Runs on any available node
+2. **ARM-Specific** (`log-aggregator-arm`): Targets ARM64 nodes explicitly
+3. **x86-Specific** (`log-aggregator-x86`): Targets AMD64 nodes explicitly
+
+### Resource Limits
+
+- **CPU**: 500m request, 1000m limit
+- **Memory**: 512Mi request, 1Gi limit
+
+### Ports
+
+- **8080**: HTTP API
+
+## Building Locally
+
+```bash
+# Install dependencies
+go mod download
+
+# Build
+go build -o log-aggregator .
+
+# Run
+./log-aggregator
+```
+
+## Environment Variables
+
+- `GOMAXPROCS`: Number of CPU cores to use (default: all available)
+
+## Compression Details
+
+The service uses LZ4 compression which provides:
+- Fast compression speed (500+ MB/s)
+- Fast decompression speed (2000+ MB/s)
+- Typical compression ratio: 60-80% for text logs
+- Low CPU overhead
+
+Compressed logs are base64-encoded for safe transmission and storage.
+
+## Production Considerations
+
+- Configure persistent storage for compressed logs
+- Set up log rotation policies
+- Monitor compression ratios to detect anomalies
+- Use LoadBalancer or Ingress for external access
+- Enable TLS for production deployments
+- Implement authentication/authorization as needed
+
+## Troubleshooting
+
+### Pod not starting
+```bash
+kubectl describe pod -l app=log-aggregator
+kubectl logs -l app=log-aggregator
+```
+
+### Service not accessible
+```bash
+# Check service endpoints
+kubectl get endpoints log-aggregator-service
+
+# Use NodePort if LoadBalancer unavailable
+kubectl patch svc log-aggregator-service -p '{"spec":{"type":"NodePort"}}'
+```
+
+### Multi-arch build issues
+```bash
+# Verify buildx setup
+docker buildx ls
+docker buildx inspect multiarch
+
+# Create new builder if needed
+docker buildx create --name multiarch --driver docker-container --use
+```
