@@ -5,7 +5,7 @@ metadata:
   labels:
     app: log-aggregator
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: log-aggregator
@@ -14,9 +14,12 @@ spec:
       labels:
         app: log-aggregator
     spec:
+      nodeSelector:
+        intent: performance
+        kubernetes.io/arch: amd64
       containers:
       - name: log-aggregator
-        image: log-aggregator:latest
+        image: christianhxc/log-aggregator:latest
         ports:
         - containerPort: 8080
           name: http
@@ -25,8 +28,7 @@ spec:
             memory: "512Mi"
             cpu: "500m"
           limits:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: "512Mi"
         readinessProbe:
           httpGet:
             path: /health
@@ -39,9 +41,6 @@ spec:
             port: 8080
           initialDelaySeconds: 15
           periodSeconds: 20
-        env:
-        - name: GOMAXPROCS
-          value: "2"
 ---
 apiVersion: v1
 kind: Service
