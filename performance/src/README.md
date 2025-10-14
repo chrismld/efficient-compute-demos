@@ -16,16 +16,10 @@ This service provides a simple API for applications to submit batches of log ent
 
 ## Quick Start
 
-### Build Multi-Architecture Image
+### Build Container Image
 
 ```bash
-# Create and use buildx builder
-docker buildx create --name multiarch --use
-docker buildx inspect --bootstrap
-
-# Build for multiple architectures
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
+docker build \
   -t your-registry/log-aggregator:latest \
   --push .
 ```

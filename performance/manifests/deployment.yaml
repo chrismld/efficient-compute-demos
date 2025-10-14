@@ -19,7 +19,7 @@ spec:
         kubernetes.io/arch: amd64
       containers:
       - name: log-aggregator
-        image: christianhxc/log-aggregator:latest
+        image: christianhxc/log-aggregator:v1
         ports:
         - containerPort: 8080
           name: http
