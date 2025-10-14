@@ -44,3 +44,7 @@ spec:
         operator: Gt
         values:
         - "2"
+      taints:
+      - key: performance
+        value: "true"
+        effect: NoSchedule
