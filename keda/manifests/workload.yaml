@@ -84,7 +84,7 @@ spec:
             value: 100
             periodSeconds: 5
         scaleDown:
-          stabilizationWindowSeconds: 60
+          stabilizationWindowSeconds: 180
           policies:
           - type: Percent
             value: 100

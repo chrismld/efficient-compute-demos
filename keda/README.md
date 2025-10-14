@@ -24,6 +24,8 @@ kubectl apply -f workload.yaml
 kubectl apply -f graviton.yaml
 kubectl apply -f x86.yaml
 
+kubectl delete configmap k6-test-scripts
+kubectl delete job load-test-1
 
 eks-node-viewer --node-selector karpenter.sh/nodepool=multiarch
 watch kubectl top nodes -l karpenter.sh/nodepool=multiarch
@@ -31,14 +33,12 @@ watch kubectl top nodes -l karpenter.sh/nodepool=multiarch
 watch kubectl get hpa
 
 ```
-kubectl delete configmap k6-test-scripts
 kubectl create configmap k6-test-scripts \
  --from-file=manifests/load-test.js \
  --from-file=manifests/perf-test-x86.js \
  --from-file=manifests/perf-test-graviton.js
 ```
 
-kubectl delete job load-test-1
 kubectl apply -f manifests/k6-load-test.yaml
 kubectl logs -l k6_cr=load-test -f
 
@@ -46,7 +46,11 @@ echo "Show main.go"
 echo "Show ServiceMonitor, ScaledObject"
 echo "Go back to the terminal 1"
 
-## Demo - Phase II
+## Demo - Phase II (Graviton Migration)
+
+echo "Ask Amazon Q ... am I ready?"
+- @workspace
+- I have an application written in Go that's running in an EKS cluster using Karpenter, what do I need to do if I want my application to run on Graviton instances? Consider making any code changes in the application, the Dockerfile, and the Terraform pipeline I have defined.
 
 kubectl delete scaledobject montecarlo-pi-latency
 kubectl scale deployment montecarlo-pi --replicas=0
@@ -66,24 +70,23 @@ eks-node-viewer --extra-labels karpenter.sh/nodepool
 eks-node-viewer --node-selector karpenter.sh/nodepool=x86
 eks-node-viewer --node-selector karpenter.sh/nodepool=graviton
 
+kubectl logs -l k6_cr=perf-test-x86 -f
+kubectl logs -l k6_cr=perf-test-graviton -f
+
 echo "Show multiarch pipeline"
 echo "Show buildspec.yml, buildspec-manifest.yml"
 echo "Go back to the terminal 2"
 
-echo "Change the nodeSelector to request Spot"
-
-kubectl apply -f manifests/workload.yaml
-
 echo "Use Amazon Q to analyze the results"
 
 ```
-Help me do the math or at least explain in a simple way the price-performance improvements you get with Graviton. I've done a performance test comparing both x86 and Graviton, and here's what I got:
+Help me do the math or at least explain in a simple way the price-performance improvements you get with Graviton, AWS says it offerse 40% better price-performance. So, I've done a performance test comparing both my previous setup and Graviton, and here's what I got:
 
-For x86, the estimated monthly payment will be $559.238, and these are the results I got from the k6 performance test:
+For the previous setup, the estimated monthly payment will be $559.238, and these are the results I got from the k6 performance test:
 
-[K6 PERFORMANCE TEST RESULTS FOR x86]
+[K6 PERFORMANCE TEST RESULTS FOR PREVIOUS SETUP]
 
-[/K6 PERFORMANCE TEST RESULTS FOR x86]
+[/K6 PERFORMANCE TEST RESULTS FOR PREVIOUS SETUP]
 
 For Graviton, the estimated monthly payment will be $498.035, and these are the results I got from the k6 performance test:
 
@@ -95,6 +98,16 @@ For Graviton, the estimated monthly payment will be $498.035, and these are the 
 cat <<EOF | kubectl apply -f -
 
 EOF
+
+## Demo - Phase III (Spot Migration)
+
+echo "Change the nodeSelector to request Spot"
+
+kubectl apply -f graviton.yaml
+kubectl scale deployment montecarlo-pi-x86 --replicas=0
+
+echo "Check the NodePool that supports Spot"
+echo "Change the deployment to use Spot"
 
 ## Demo Story
 
