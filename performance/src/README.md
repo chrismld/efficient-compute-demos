@@ -212,6 +212,24 @@ The test runs with:
 
 To adjust load intensity, modify the `vus` value in the ConfigMap (85 = ~90% CPU, 100 = ~100%+ CPU).
 
+### Running aperf
+
+```bash
+bash ./eks-aperf.sh \
+  --aperf_image="christianhxc/aperf:latest" \
+  --node="$(kubectl get pod -l app=log-aggregator-x86 -o jsonpath='{.items[0].spec.nodeName}')" \
+  --aperf_options="-p 90 --profile" \
+  --report-name="x86"
+```
+
+```bash
+bash ./eks-aperf.sh \
+  --aperf_image="christianhxc/aperf:latest" \
+  --node="$(kubectl get pod -l app=log-aggregator-arm -o jsonpath='{.items[0].spec.nodeName}')" \
+  --aperf_options="-p 90 --profile" \
+  --report-name="arm"
+```
+
 ## Troubleshooting
 
 ### Pod not starting

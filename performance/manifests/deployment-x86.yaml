@@ -16,7 +16,6 @@ spec:
     spec:
       nodeSelector:
         intent: performance
-        kubernetes.io/arch: amd64
         karpenter.k8s.aws/instance-family: "c7i"
       tolerations:
       - key: performance

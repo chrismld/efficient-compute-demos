@@ -11,7 +11,7 @@ data:
       scenarios: {
         constant_load: {
           executor: 'constant-vus',
-          vus: 60,
+          vus: 25,
           duration: '5m',
         },
       },
@@ -22,8 +22,8 @@ data:
     // Generate massive log batches to maximize CPU usage
     function generateMassiveLogBatch() {
       const logs = [];
-      // 1000 logs per batch with much larger messages
-      for (let i = 0; i < 1000; i++) {
+      // 250 logs per batch with much larger messages
+      for (let i = 0; i < 250; i++) {
         // Create a very long message with repetitive content (compresses well but takes CPU time)
         const longMessage = `This is a detailed log message with extensive repetitive content that will compress well but requires significant CPU processing. Request ID: ${i}. User performed action on resource. Status: success. Additional context: processing completed successfully with no errors encountered during execution. The system processed the request through multiple layers including authentication, authorization, validation, business logic execution, database operations, cache updates, and response formatting. Performance metrics were collected at each stage. Timestamps were recorded. Audit logs were generated. Notifications were queued. Background jobs were scheduled. `.repeat(5);
         
@@ -84,6 +84,7 @@ metadata:
   name: log-aggregator-x86
 spec:
   quiet: "false"
+  cleanup: post
   parallelism: 12
   script:
     configMap:
@@ -107,6 +108,7 @@ metadata:
   name: log-aggregator-arm
 spec:
   quiet: "false"
+  cleanup: post
   parallelism: 12
   script:
     configMap:
