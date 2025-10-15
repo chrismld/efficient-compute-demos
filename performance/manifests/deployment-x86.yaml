@@ -1,22 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: log-aggregator-service
+  name: log-aggregator-x86
   labels:
-    app: log-aggregator
+    app: log-aggregator-x86
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: log-aggregator
+      app: log-aggregator-x86
   template:
     metadata:
       labels:
-        app: log-aggregator
+        app: log-aggregator-x86
     spec:
       nodeSelector:
         intent: performance
         kubernetes.io/arch: amd64
+        karpenter.k8s.aws/instance-family: "c7i"
       tolerations:
       - key: performance
         effect: NoSchedule
@@ -29,10 +30,10 @@ spec:
           name: http
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "3512Mi"
+            cpu: "1500m"
           limits:
-            memory: "512Mi"
+            memory: "3512Mi"
         readinessProbe:
           httpGet:
             path: /health
@@ -49,14 +50,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: log-aggregator-service
+  name: log-aggregator-x86
   labels:
-    app: log-aggregator
+    app: log-aggregator-x86
 spec:
   selector:
-    app: log-aggregator
+    app: log-aggregator-x86
   ports:
   - name: http
     port: 8080
     targetPort: 8080
-  type: LoadBalancer
+  # type: LoadBalancer

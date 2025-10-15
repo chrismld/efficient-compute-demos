@@ -32,14 +32,14 @@ kubectl apply -f k8s-deployment.yaml
 
 # Verify deployment
 kubectl get pods -l app=log-aggregator
-kubectl get svc log-aggregator-service
+kubectl get svc log-aggregator-x86
 ```
 
 ### Test the Service
 
 ```bash
 # Port forward to access locally
-kubectl port-forward svc/log-aggregator-service 8080:8080
+kubectl port-forward svc/log-aggregator-x86 8080:8080
 
 # Submit a batch of logs
 curl -X POST http://localhost:8080/api/logs/batch \
@@ -121,16 +121,15 @@ Health check endpoint.
 
 ## Deployment Configuration
 
-The service includes three deployment options:
+The service includes two deployment options:
 
-1. **Generic Deployment** (`log-aggregator-service`): Runs on any available node
-2. **ARM-Specific** (`log-aggregator-arm`): Targets ARM64 nodes explicitly
-3. **x86-Specific** (`log-aggregator-x86`): Targets AMD64 nodes explicitly
+1. **ARM-Specific** (`log-aggregator-arm`): Targets ARM64 nodes explicitly
+2. **x86-Specific** (`log-aggregator-x86`): Targets AMD64 nodes explicitly
 
 ### Resource Limits
 
-- **CPU**: 500m request, 1000m limit
-- **Memory**: 512Mi request, 1Gi limit
+- **CPU**: 1500m request
+- **Memory**: 3512Mi request, 3512Mi limit
 
 ### Ports
 
@@ -186,14 +185,15 @@ kubectl apply -f ../manifests/k6-test.yaml
 kubectl top pod -l app=log-aggregator --watch
 
 # View k6 test logs (12 pods will be created)
-kubectl logs -l k6_cr=log-aggregator-load-test -f --max-log-requests 14
+kubectl logs -l k6_cr=log-aggregator-x86 -f --max-log-requests 14
+kubectl logs -l k6_cr=log-aggregator-arm -f --max-log-requests 14
 ```
 
 ### Re-run Load Test
 
 ```bash
 # Delete the existing test run
-kubectl delete testrun log-aggregator-load-test
+kubectl delete testrun --all
 
 # Wait for pods to terminate
 kubectl get pods -l k6_cr=log-aggregator-load-test
@@ -206,7 +206,7 @@ kubectl apply -f ../manifests/k6-test.yaml
 
 The test runs with:
 - **12 parallel k6 pods** (1,020 total virtual users)
-- **85 VUs per pod** for 5 minutes
+- **60 VUs per pod** for 5 minutes
 - **1,000 logs per batch** with large messages
 - Target: ~90% CPU utilization on the log-aggregator pod
 

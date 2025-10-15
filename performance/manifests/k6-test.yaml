@@ -11,7 +11,7 @@ data:
       scenarios: {
         constant_load: {
           executor: 'constant-vus',
-          vus: 85,
+          vus: 60,
           duration: '5m',
         },
       },
@@ -81,7 +81,7 @@ data:
 apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
-  name: log-aggregator-load-test
+  name: log-aggregator-x86
 spec:
   quiet: "false"
   parallelism: 12
@@ -99,4 +99,27 @@ spec:
         memory: 1Gi
     env:
     - name: BASE_URL
-      value: "http://log-aggregator-service:8080"
+      value: "http://log-aggregator-x86:8080"
+---
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: log-aggregator-arm
+spec:
+  quiet: "false"
+  parallelism: 12
+  script:
+    configMap:
+      name: k6-load-test-script
+      file: load-test.js
+  runner:
+    image: grafana/k6:latest
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 1Gi
+      limits:
+        memory: 1Gi
+    env:
+    - name: BASE_URL
+      value: "http://log-aggregator-arm:8080"

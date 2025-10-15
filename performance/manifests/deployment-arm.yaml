@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-aggregator-arm
+  labels:
+    app: log-aggregator-arm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-aggregator-arm
+  template:
+    metadata:
+      labels:
+        app: log-aggregator-arm
+    spec:
+      nodeSelector:
+        intent: performance
+        kubernetes.io/arch: arm64
+        karpenter.k8s.aws/instance-family: "c8g"
+      tolerations:
+      - key: performance
+        effect: NoSchedule
+        operator: Exists
+      containers:
+      - name: log-aggregator
+        image: christianhxc/log-aggregator:v1
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "3512Mi"
+            cpu: "1500m"
+          limits:
+            memory: "3512Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-aggregator-arm
+  labels:
+    app: log-aggregator-arm
+spec:
+  selector:
+    app: log-aggregator-arm
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  # type: LoadBalancer
