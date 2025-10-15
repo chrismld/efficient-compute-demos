@@ -215,7 +215,15 @@ To adjust load intensity, modify the `vus` value in the ConfigMap (85 = ~90% CPU
 ### Running aperf
 
 ```bash
-bash ./eks-aperf.sh \
+git clone https://github.com/aws/aperf.git
+cd aperf
+ln -s $(pwd)/eks-aperf.sh /usr/local/bin/kubectl-aperf
+chmod +x eks-aperf.sh
+kubectl aperf --help
+```
+
+```bash
+kubectl aperf \
   --aperf_image="christianhxc/aperf:latest" \
   --node="$(kubectl get pod -l app=log-aggregator-x86 -o jsonpath='{.items[0].spec.nodeName}')" \
   --aperf_options="-p 90 --profile" \
@@ -223,7 +231,7 @@ bash ./eks-aperf.sh \
 ```
 
 ```bash
-bash ./eks-aperf.sh \
+kubectl aperf \
   --aperf_image="christianhxc/aperf:latest" \
   --node="$(kubectl get pod -l app=log-aggregator-arm -o jsonpath='{.items[0].spec.nodeName}')" \
   --aperf_options="-p 90 --profile" \
