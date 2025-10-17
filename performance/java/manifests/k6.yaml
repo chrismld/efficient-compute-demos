@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-json-processor-test
+data:
+  load-test.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+
+    export const options = {
+      scenarios: {
+        constant_load: {
+          executor: 'constant-vus',
+          vus: 20,
+          duration: '3m',
+        },
+      },
+    };
+
+    const BASE_URL = __ENV.BASE_URL || 'http://json-processor:8080';
+
+    function generateRecords() {
+      const records = [];
+      for (let i = 0; i < 500; i++) {  // 500 records per request
+        records.push({
+          id: `record-${i}-${Math.random().toString(36).substring(7)}`,
+          data: `This is sample data that needs sanitization with special chars!!!@@@ and more content here. `.repeat(5),
+          email: i % 3 === 0 ? `user${i}@example.com` : `invalid-email-${i}`,
+          metadata: {
+            source: 'api',
+            priority: Math.floor(Math.random() * 10),
+            tags: ['production', 'important', 'monitored'],
+            timestamp: new Date().toISOString(),
+            user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            ip_address: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+          },
+        });
+      }
+      return records;
+    }
+
+    export default function () {
+      const payload = JSON.stringify({
+        records: generateRecords(),
+      });
+
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: '30s',
+      };
+
+      const response = http.post(`${BASE_URL}/api/process`, payload, params);
+
+      check(response, {
+        'status is 200': (r) => r.status === 200,
+      });
+      
+      sleep(0.2);
+    }
+---
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: json-processor-load
+spec:
+  quiet: "false"
+  cleanup: post
+  parallelism: 10
+  script:
+    configMap:
+      name: k6-json-processor-test
+      file: load-test.js
+  runner:
+    image: grafana/k6:latest
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
