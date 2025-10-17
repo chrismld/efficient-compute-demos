@@ -5,27 +5,35 @@ metadata:
 data:
   load-test.js: |
     import http from 'k6/http';
-    import { check } from 'k6';
+    import { check, sleep } from 'k6';
 
     export const options = {
       scenarios: {
         constant_load: {
           executor: 'constant-vus',
-          vus: 25,
-          duration: '5m',
+          vus: 12,
+          duration: '3m',
         },
+      },
+      thresholds: {
+        http_req_failed: ['rate<0.05'],  // Allow 5% failure rate
+        http_req_duration: ['p(99)<45000'],  // P99 under 45 seconds
       },
     };
 
     const BASE_URL = __ENV.BASE_URL || 'http://log-aggregator-service:8080';
 
-    // Generate massive log batches to maximize CPU usage
+    // Generate moderate-sized log batches
     function generateMassiveLogBatch() {
       const logs = [];
-      // 250 logs per batch with much larger messages
-      for (let i = 0; i < 250; i++) {
-        // Create a very long message with repetitive content (compresses well but takes CPU time)
-        const longMessage = `This is a detailed log message with extensive repetitive content that will compress well but requires significant CPU processing. Request ID: ${i}. User performed action on resource. Status: success. Additional context: processing completed successfully with no errors encountered during execution. The system processed the request through multiple layers including authentication, authorization, validation, business logic execution, database operations, cache updates, and response formatting. Performance metrics were collected at each stage. Timestamps were recorded. Audit logs were generated. Notifications were queued. Background jobs were scheduled. `.repeat(5);
+      // 3MB payload - balanced for performance testing
+      const targetPayloadSizeMB = 3;
+      const approxLogSizeBytes = 5000;
+      const logsPerBatch = Math.floor((targetPayloadSizeMB * 1024 * 1024) / approxLogSizeBytes);
+
+      for (let i = 0; i < logsPerBatch; i++) {
+        // Moderate repetition - 30x
+        const longMessage = `This is a detailed log message with extensive repetitive content that will compress well but requires significant CPU processing. Request ID: ${i}. User performed action on resource. Status: success. Additional context: processing completed successfully with no errors encountered during execution. The system processed the request through multiple layers including authentication, authorization, validation, business logic execution, database operations, cache updates, and response formatting. Performance metrics were collected at each stage. Timestamps were recorded. Audit logs were generated. Notifications were queued. Background jobs were scheduled. `.repeat(30);
         
         logs.push({
           timestamp: new Date().toISOString(),
@@ -68,14 +76,25 @@ data:
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: '30s',
+        timeout: '50s',  // Generous timeout for compression work
       };
 
       const response = http.post(`${BASE_URL}/api/logs/batch`, payload, params);
 
       check(response, {
         'status is 200': (r) => r.status === 200,
+        'has processing time': (r) => {
+          try {
+            const body = JSON.parse(r.body);
+            return body.processing_time !== undefined;
+          } catch (e) {
+            return false;
+          }
+        },
       });
+      
+      // Small pause between requests to prevent overwhelming single pod
+      sleep(0.5);
     }
 ---
 apiVersion: k6.io/v1alpha1
@@ -85,7 +104,7 @@ metadata:
 spec:
   quiet: "false"
   cleanup: post
-  parallelism: 12
+  parallelism: 8  # Reduced from 12 to be gentler on single pod
   script:
     configMap:
       name: k6-load-test-script
@@ -94,8 +113,8 @@ spec:
     image: grafana/k6:latest
     resources:
       requests:
-        cpu: 1000m
-        memory: 1Gi
+        cpu: 500m
+        memory: 512Mi
       limits:
         memory: 1Gi
     env:
@@ -109,7 +128,7 @@ metadata:
 spec:
   quiet: "false"
   cleanup: post
-  parallelism: 12
+  parallelism: 8  # Reduced from 12 to be gentler on single pod
   script:
     configMap:
       name: k6-load-test-script
@@ -118,8 +137,8 @@ spec:
     image: grafana/k6:latest
     resources:
       requests:
-        cpu: 1000m
-        memory: 1Gi
+        cpu: 500m
+        memory: 512Mi
       limits:
         memory: 1Gi
     env:
