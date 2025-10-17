@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"log"
@@ -92,9 +93,8 @@ func compressLogs(data []byte) ([]byte, error) {
 	var n int
 	var err error
 	
-	// Compress multiple times to amplify CPU differences
-	// This simulates a workload that does heavy compression processing
-	iterations := 20  // Increase this to make differences more visible
+	// Moderate iterations - enough to show CPU differences without overwhelming
+	iterations := 8
 	for i := 0; i < iterations; i++ {
 		n, err = lz4.CompressBlock(data, compressed, nil)
 		if err != nil {
@@ -112,6 +112,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 		"architecture": runtime.GOARCH,
 		"go_version":   runtime.Version(),
 		"lz4_version":  "v4.0.0",
+		"num_cpu":      runtime.NumCPU(),
 		"timestamp":    time.Now().Format(time.RFC3339),
 	}
 
@@ -127,6 +128,9 @@ func min(a, b int) int {
 }
 
 func main() {
+	// Set GOMAXPROCS to use all available CPUs
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	
 	http.HandleFunc("/api/logs/batch", handleLogBatch)
 	http.HandleFunc("/health", handleHealth)
 
@@ -134,6 +138,8 @@ func main() {
 		info := map[string]interface{}{
 			"service": "Log Aggregation API",
 			"version": "1.0.0",
+			"lz4_version": "v4.0.0",
+			"architecture": runtime.GOARCH,
 			"endpoints": map[string]string{
 				"POST /api/logs/batch": "Submit batch of log entries",
 				"GET /health":          "Health check",
@@ -144,6 +150,6 @@ func main() {
 		json.NewEncoder(w).Encode(info)
 	})
 
-	log.Println("Log Aggregation Service starting on :8080")
+	log.Printf("Log Aggregation Service starting on :8080 (arch=%s, cpus=%d)", runtime.GOARCH, runtime.NumCPU())
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
