@@ -45,8 +45,6 @@ public class Main {
                 return;
             }
             
-            long startTime = System.nanoTime();
-            
             try {
                 String requestBody = new BufferedReader(new InputStreamReader(exchange.getRequestBody()))
                     .lines()
@@ -55,15 +53,12 @@ public class Main {
                 JSONObject request = new JSONObject(requestBody);
                 JSONArray records = request.getJSONArray("records");
                 
-                // PERFORMANCE ISSUE: Inefficient data processing with string manipulation
+                // Process the records (contains performance issues)
                 List<Map<String, Object>> processedRecords = processRecords(records);
                 
-                long processingTime = System.nanoTime() - startTime;
-                
                 JSONObject response = new JSONObject();
+                response.put("status", "success");
                 response.put("processed", processedRecords.size());
-                response.put("processing_time_ms", processingTime / 1_000_000.0);
-                response.put("records_per_second", (processedRecords.size() * 1_000_000_000.0) / processingTime);
                 
                 sendResponse(exchange, 200, response.toString());
                 
