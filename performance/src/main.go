@@ -86,18 +86,15 @@ func handleLogBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func compressLogs(data []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	writer := lz4.NewWriter(&buf)
-
-	if _, err := writer.Write(data); err != nil {
+	maxCompressedSize := lz4.CompressBlockBound(len(data))
+	compressed := make([]byte, maxCompressedSize)
+	
+	n, err := lz4.CompressBlock(data, compressed, nil)
+	if err != nil {
 		return nil, err
 	}
-
-	if err := writer.Close(); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	
+	return compressed[:n], nil
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
