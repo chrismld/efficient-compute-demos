@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"log"
@@ -93,7 +92,7 @@ func compressLogs(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return compressed[:n], nil
 }
 
