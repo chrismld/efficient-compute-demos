@@ -14,6 +14,13 @@ spec:
       labels:
         app: json-processor
     spec:
+      nodeSelector:
+        intent: performance
+        kubernetes.io/arch: "arm64"
+      tolerations:
+      - key: performance
+        effect: NoSchedule
+        operator: Exists
       containers:
       - name: json-processor
         image: christianhxc/java-json-processor:v1
