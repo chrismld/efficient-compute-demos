@@ -85,14 +85,24 @@ func handleLogBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func compressLogs(data []byte) ([]byte, error) {
+	// Use block compression API (no streaming overhead)
 	maxCompressedSize := lz4.CompressBlockBound(len(data))
 	compressed := make([]byte, maxCompressedSize)
 	
-	n, err := lz4.CompressBlock(data, compressed, nil)
-	if err != nil {
-		return nil, err
+	var n int
+	var err error
+	
+	// Compress multiple times to amplify CPU differences
+	// This simulates a workload that does heavy compression processing
+	iterations := 20  // Increase this to make differences more visible
+	for i := 0; i < iterations; i++ {
+		n, err = lz4.CompressBlock(data, compressed, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
-
+	
+	// Return only the actual compressed bytes from the last iteration
 	return compressed[:n], nil
 }
 
@@ -101,6 +111,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 		"status":       "healthy",
 		"architecture": runtime.GOARCH,
 		"go_version":   runtime.Version(),
+		"lz4_version":  "v4.0.0",
 		"timestamp":    time.Now().Format(time.RFC3339),
 	}
 
