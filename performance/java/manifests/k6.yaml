@@ -11,8 +11,8 @@ data:
       scenarios: {
         constant_load: {
           executor: 'constant-vus',
-          vus: 20,
-          duration: '3m',
+          vus: 30,
+          duration: '5m',
         },
       },
     };
@@ -21,7 +21,7 @@ data:
 
     function generateRecords() {
       const records = [];
-      for (let i = 0; i < 500; i++) {  // 500 records per request
+      for (let i = 0; i < 800; i++) {  // 800 records per request
         records.push({
           id: `record-${i}-${Math.random().toString(36).substring(7)}`,
           data: `This is sample data that needs sanitization with special chars!!!@@@ and more content here. `.repeat(5),
