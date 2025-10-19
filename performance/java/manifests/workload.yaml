@@ -29,10 +29,8 @@ spec:
         - containerPort: 8080
           name: http
         env:
-        - name: PORT
-          value: "8080"
         - name: JAVA_OPTS
-          value: "-Xmx2g -Xms2g -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+PreserveFramePointer"
+          value: "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+PreserveFramePointer"
         resources:
           requests:
             memory: "3Gi"
@@ -40,11 +38,11 @@ spec:
           limits:
             memory: "3Gi"
         securityContext:
+          privileged: true
           capabilities:
             add:
-            - SYS_ADMIN
-            - SYS_PTRACE
-          privileged: false
+              - SYS_ADMIN
+              - SYS_PTRACE
 ---
 apiVersion: v1
 kind: Service

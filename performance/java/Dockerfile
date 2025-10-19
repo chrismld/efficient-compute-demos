@@ -1,34 +1,30 @@
+# Build stage
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
+# Runtime image with JDK and async-profiler
 FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
-COPY --from=build /app/target/json-processor-1.0.0.jar app.jar
 
-# Install perf and async-profiler
+# Install required tools + async-profiler
 RUN apt-get update && \
-    apt-get install -y linux-tools-generic wget && \
-    # Create symlink for perf (Ubuntu-specific)
-    ln -sf /usr/lib/linux-tools/*/perf /usr/bin/perf || true && \
-    # Install async-profiler
+    apt-get install -y wget tar gzip procps && \
     wget -q https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz && \
-    tar -xzf async-profiler-3.0-linux-x64.tar.gz -C /opt && \
+    mkdir /async-profiler && \
+    tar -xvzf async-profiler-3.0-linux-x64.tar.gz -C /async-profiler --strip-components=1 && \
     rm async-profiler-3.0-linux-x64.tar.gz && \
     rm -rf /var/lib/apt/lists/*
 
-ENV PORT=8080
+COPY --from=build /app/target/json-processor-1.0.0.jar /app/app.jar
 
-ENV JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions \
--XX:+DebugNonSafepoints \
--XX:+PreserveFramePointer \
--Xms2g \
--Xmx2g"
+# Set environment for JVM to expose proper debug info for async-profiler
+ENV JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+PreserveFramePointer"
 
-ENV PATH="/opt/async-profiler-3.0-linux-x64/bin:${PATH}"
+# Add async-profiler to path for aperf detection
+ENV PATH="/async-profiler/bin:$PATH"
 
 EXPOSE 8080
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
